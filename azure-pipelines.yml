@@ -7,10 +7,17 @@ trigger:
 - master
 
 pool:
- name: Default
+  name: Default
 
 steps:
+- task: JavaToolInstaller@0
+  displayName: 'Install JDK 11'
+  inputs:
+    versionSpec: '11'
+    jdkArchitectureOption: 'x64'
+
 - task: Maven@3
+  displayName: 'Maven Package'
   inputs:
     mavenPomFile: 'pom.xml'
     mavenOptions: '-Xmx3072m'
