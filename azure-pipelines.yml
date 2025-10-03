@@ -11,11 +11,12 @@ pool:
 
 steps:
 - task: JavaToolInstaller@0
-  displayName: 'Install JDK 11'
+  displayName: 'Use local JDK 11'
   inputs:
     versionSpec: '11'
     jdkArchitectureOption: 'x64'
-    jdkSourceOption: 'PreInstalled'  # or use 'AzureStorage' or 'LocalDirectory' if needed
+    jdkSourceOption: 'LocalDirectory'
+    jdkFile: 'C:\Program Files\Java\jdk-21'  # 👈 Update this path to your actual JDK 11 folder
 
 - task: Maven@3
   displayName: 'Maven Package'
