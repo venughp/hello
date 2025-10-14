@@ -15,7 +15,7 @@ stages:
   jobs:
   - job: BuildJob
     pool:
-      vmImage: 'ubuntu-latest'     # Use Linux agent here
+      vmImage: 'ubuntu-latest'   # Use Linux agent here
     steps:
     - task: Maven@4
       displayName: 'Maven Package'
@@ -30,15 +30,17 @@ stages:
         goals: 'package'
 
     - task: CopyFiles@2
+      displayName: 'Copy WAR files to artifact staging directory'
       inputs:
         SourceFolder: '$(Build.SourcesDirectory)'
         Contents: '**/*.war'
         TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
     - task: PublishBuildArtifacts@1
+      displayName: 'Publish WAR artifact'
       inputs:
         PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-        ArtifactName: 'warfile-$(Build.BuildNumber)'
+        ArtifactName: 'warfile'
         publishLocation: 'Container'
 
 # -----------------------------
@@ -51,7 +53,7 @@ stages:
   - deployment: DeployToQA
     environment: 'QA'
     pool:
-      vmImage: 'ubuntu-latest'    # Specify Linux agent for deployment job
+      vmImage: 'ubuntu-latest'    # Linux agent for deployment
     strategy:
       runOnce:
         deploy:
@@ -60,11 +62,11 @@ stages:
             artifact: warfile
 
           - task: AzureWebApp@1
-            displayName: 'Deploy .war to Azure'
+            displayName: 'Deploy .war to Azure Web App'
             inputs:
-              azureSubscription: 'MyAzureConnection'
+              azureSubscription: 'MyAzureConnection'  # Your service connection name
               appType: 'webApp'
-              appName: 'venudemo'
+              appName: 'venudemo'                      # Your Azure Web App name
               package: '$(Pipeline.Workspace)/warfile/**/*.war'
 
 # -----------------------------
@@ -76,14 +78,14 @@ stages:
   jobs:
   - job: RunSeleniumTests
     pool:
-      vmImage: 'ubuntu-latest'   # Linux agent for QA tests
+      vmImage: 'ubuntu-latest'   # Linux agent for tests
     steps:
     - task: Maven@4
       displayName: 'Run Selenium TestNG Tests'
       inputs:
         mavenPomFile: 'pom.xml'
         goals: 'test'
-        options: '-Dsurefire.suiteXmlFiles=testng.xml'
+        options: '-Dsurefire.suiteXmlFiles=testng.xml'   # your TestNG suite XML
         javaHomeOption: 'JDKVersion'
         jdkVersionOption: '1.11'
         jdkArchitectureOption: 'x64'
@@ -91,6 +93,6 @@ stages:
     - task: PublishTestResults@2
       displayName: 'Publish Selenium TestNG Test Results'
       inputs:
-        testResultsFiles: '**/target/surefire-reports/testng-results.xml'
+        testResultsFiles: '**/target/surefire-reports/TEST-*.xml'  # Default pattern for TestNG results
         testRunTitle: 'Selenium TestNG Test Results'
-      condition: succeededOrFailed()
+      condition: succeededOrFailed()  # Publish results even if tests fail
