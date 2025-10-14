@@ -31,5 +31,5 @@ steps:
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
     ArtifactName: 'warfile'
-    publishLocation: 'Container'
+    publishLocation: 'Container' 
 
