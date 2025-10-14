@@ -23,10 +23,10 @@ steps:
     goals: 'package'
 - task: CopyFiles@2
   inputs:
-    Contents: '**/.*xml'
+    Contents: '**/.*jar'
     TargetFolder: '$(build.artifactstagingdirectory)'
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    ArtifactName: 'xmlfile'
+    ArtifactName: 'jarfile'
     publishLocation: 'Container'
