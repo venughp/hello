@@ -2,7 +2,6 @@
 # Build your Java project and run tests with Apache Maven.
 # Add steps that analyze code, save build artifacts, deploy, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/java
-
 trigger:
 - master
 
@@ -27,7 +26,7 @@ stages:
         jdkVersionOption: '1.11'
         jdkArchitectureOption: 'x64'
         publishJUnitResults: true
-        testResultsFiles: '**/surefire-reports/TEST-*.xml'
+        testResultsFiles: '**/target/surefire-reports/TEST-*.xml'
         goals: 'package'
 
     - task: CopyFiles@2
@@ -50,7 +49,7 @@ stages:
   dependsOn: Build
   jobs:
   - deployment: DeployToQA
-    environment: 'QA'   # You can create this in Azure DevOps > Pipelines > Environments
+    environment: 'QA'
     strategy:
       runOnce:
         deploy:
@@ -61,23 +60,35 @@ stages:
           - task: AzureWebApp@1
             displayName: 'Deploy .war to Azure'
             inputs:
-              azureSubscription: 'MyAzureConnection'  # You must set this up
+              azureSubscription: 'MyAzureConnection'
               appType: 'webApp'
-              appName: 'venudemo'                   # Your Azure Web App
+              appName: 'venudemo'
               package: '$(Pipeline.Workspace)/warfile/**/*.war'
 
 # -----------------------------
-# Stage 3: QA Tests (Optional)
+# Stage 3: QA Tests (Selenium + TestNG)
 # -----------------------------
 - stage: QA
-  displayName: 'Run QA Tests'
+  displayName: 'Run Selenium TestNG QA Tests'
   dependsOn: Deploy
   jobs:
-  - job: RunTests
+  - job: RunSeleniumTests
     pool:
       name: Default
     steps:
-    - script: |
-        echo "Running QA automation tests..."
-        mvn test   # or any script for selenium/postman etc.
-      displayName: 'Run Maven QA Tests'
+    - task: Maven@4
+      displayName: 'Run Selenium TestNG Tests'
+      inputs:
+        mavenPomFile: 'pom.xml'
+        goals: 'test'
+        options: '-Dsurefire.suiteXmlFiles=testng.xml'
+        javaHomeOption: 'JDKVersion'
+        jdkVersionOption: '1.11'
+        jdkArchitectureOption: 'x64'
+
+    - task: PublishTestResults@2
+      displayName: 'Publish Selenium TestNG Test Results'
+      inputs:
+        testResultsFiles: '**/target/surefire-reports/testng-results.xml'
+        testRunTitle: 'Selenium TestNG Test Results'
+      condition: succeededOrFailed()
