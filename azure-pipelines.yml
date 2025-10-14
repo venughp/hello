@@ -6,30 +6,78 @@
 trigger:
 - master
 
-pool:
-  name: Default
+stages:
 
-steps:
-- task: Maven@4
-  displayName: 'Maven Package'
-  inputs:
-    mavenPomFile: 'pom.xml'
-    mavenOptions: '-Xmx3072m'
-    javaHomeOption: 'JDKVersion'
-    jdkVersionOption: '1.11'
-    jdkArchitectureOption: 'x64'
-    publishJUnitResults: true
-    testResultsFiles: '**/surefire-reports/TEST-*.xml'
-    goals: 'package'
-- task: CopyFiles@2
-  inputs:
-    SourceFolder: '$(Build.SourcesDirectory)'
-    Contents: '**/*.war'
-    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+# -----------------------------
+# Stage 1: Build
+# -----------------------------
+- stage: Build
+  displayName: 'Build Stage'
+  jobs:
+  - job: BuildJob
+    pool:
+      name: Default
+    steps:
+    - task: Maven@4
+      displayName: 'Maven Package'
+      inputs:
+        mavenPomFile: 'pom.xml'
+        mavenOptions: '-Xmx3072m'
+        javaHomeOption: 'JDKVersion'
+        jdkVersionOption: '1.11'
+        jdkArchitectureOption: 'x64'
+        publishJUnitResults: true
+        testResultsFiles: '**/surefire-reports/TEST-*.xml'
+        goals: 'package'
 
-- task: PublishBuildArtifacts@1
-  inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    ArtifactName: 'warfile'
-    publishLocation: 'Container' 
+    - task: CopyFiles@2
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)'
+        Contents: '**/*.war'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'warfile'
+        publishLocation: 'Container'
+
+# -----------------------------
+# Stage 2: Deploy to Azure
+# -----------------------------
+- stage: Deploy
+  displayName: 'Deploy to Azure Web App'
+  dependsOn: Build
+  jobs:
+  - deployment: DeployToQA
+    environment: 'QA'   # You can create this in Azure DevOps > Pipelines > Environments
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: warfile
+
+          - task: AzureWebApp@1
+            displayName: 'Deploy .war to Azure'
+            inputs:
+              azureSubscription: 'MyAzureConnection'  # You must set this up
+              appType: 'webApp'
+              appName: 'venudemo'                   # Your Azure Web App
+              package: '$(Pipeline.Workspace)/warfile/**/*.war'
+
+# -----------------------------
+# Stage 3: QA Tests (Optional)
+# -----------------------------
+- stage: QA
+  displayName: 'Run QA Tests'
+  dependsOn: Deploy
+  jobs:
+  - job: RunTests
+    pool:
+      name: Default
+    steps:
+    - script: |
+        echo "Running QA automation tests..."
+        mvn test   # or any script for selenium/postman etc.
+      displayName: 'Run Maven QA Tests'
