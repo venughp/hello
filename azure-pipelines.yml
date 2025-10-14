@@ -15,7 +15,7 @@ stages:
   jobs:
   - job: BuildJob
     pool:
-      name: Default
+      vmImage: 'ubuntu-latest'     # Use Linux agent here
     steps:
     - task: Maven@4
       displayName: 'Maven Package'
@@ -50,6 +50,8 @@ stages:
   jobs:
   - deployment: DeployToQA
     environment: 'QA'
+    pool:
+      vmImage: 'ubuntu-latest'    # Specify Linux agent for deployment job
     strategy:
       runOnce:
         deploy:
@@ -74,7 +76,7 @@ stages:
   jobs:
   - job: RunSeleniumTests
     pool:
-      name: Default
+      vmImage: 'ubuntu-latest'   # Linux agent for QA tests
     steps:
     - task: Maven@4
       displayName: 'Run Selenium TestNG Tests'
