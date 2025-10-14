@@ -1,15 +1,5 @@
-# Maven
-# Build your Java project and run tests with Apache Maven.
-# Add steps that analyze code, save build artifacts, deploy, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/java
 trigger:
 - master
-
-resources:
-  repositories:
-    - repository: qaRepo
-      type: git
-      name: JmeterDemo/JmeterDemo   # Replace 'MyProject' with your actual Azure DevOps project name
 
 stages:
 
@@ -23,9 +13,6 @@ stages:
     pool:
       vmImage: 'ubuntu-latest'   # Use Linux agent here
     steps:
-    - checkout: self             # Check out main repo
-    - checkout: qaRepo           # Check out QA repo (JmeterDemo)
-
     - task: Maven@4
       displayName: 'Maven Package'
       inputs:
@@ -89,9 +76,6 @@ stages:
     pool:
       vmImage: 'ubuntu-latest'   # Linux agent for tests
     steps:
-    - checkout: self             # Checkout main repo (usually needed for pom.xml & test files)
-    - checkout: qaRepo           # Checkout QA repo (JmeterDemo) where maybe tests or resources live
-
     - task: Maven@4
       displayName: 'Run Selenium TestNG Tests'
       inputs:
